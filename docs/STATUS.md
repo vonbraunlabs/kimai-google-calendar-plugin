@@ -11,14 +11,15 @@ about *where we stopped and what to do next*.
 
 | Issue | Status |
 |---|---|
-| #1 Import Google Calendar events and Google Tasks as Kimai timesheets | 🚧 Implemented on `feature/issue-1-google-calendar-import`, PR to `develop` pending review |
+| #1 Import Google Calendar events and Google Tasks as Kimai timesheets | 🚧 [PR #2](https://github.com/vonbraunlabs/kimai-google-calendar-plugin/pull/2) open against `develop`, all CI checks green, waiting for human review |
 
-- Tests: 100 tests, **99.83%** line coverage, 80% gate passing (2026-09-30, via
+- Tests: 102 tests, **99.84%** line coverage, 80% gate passing (2026-09-30, via
   `docker compose run --rm gcal-test …`, CLAUDE.md §4).
 - ADRs 0001–0006 accepted (`docs/adrs/README.md`).
 - CI (`.github/workflows/ci.yml`): jobs `tests` (Kimai version match + PHPUnit + gate),
   `kimai-install` (real Kimai 2.67.0, pinned in `docker/Dockerfile`) and `comment`.
-- `develop` is protected: 1 approval + CI status checks.
+- `develop` is protected: 1 approval + required status checks `tests` and `kimai-install`
+  (strict: the branch must be up to date with `develop`), configured 2026-09-30.
 
 ## Session 2 (2026-09-30) — development environment replicated from Karajan
 
@@ -36,6 +37,8 @@ about *where we stopped and what to do next*.
   file first. `lint:twig` added.
 - The single uncommitted block of issue #1 was split into contextual commits, each passing its
   own tests in an isolated worktree.
+- `gcal-domain-reviewer` found that the settings page did not disconnect on lost authorization
+  nor save a refreshed token (fixed); raw exception messages in row errors are now translated.
 - Decisions from Diego applied: `composer.lock` is versioned (pins Kimai 2.67.0, same as Docker,
   with a CI guard); mapping-rule keywords match as whole words only (ADR-0006); all remaining
   hardcoded UI strings are translated (Kimai's translator falls back to English).
@@ -55,5 +58,12 @@ about *where we stopped and what to do next*.
 - A local database that ran the initial migration before 2026-09-30 still has the
   `source_updated` column; it is nullable and unmapped, so harmless. Drop it by hand or recreate
   the dev database (`docker compose down -v`).
-- The first `docker compose up` from an empty volume takes ~20 minutes on the developer machine.
-  If the CI runner is also slow, `--wait-timeout 1200` may need raising.
+- The first `docker compose up` from an empty volume takes ~20 minutes on the developer machine
+  (on the GitHub runner the whole `kimai-install` job took 73 s). Locally, run it in the
+  background; if it ever exceeds `--wait-timeout 1200`, investigate the machine before raising it.
+- The client secret is a `TextType` in the system configuration, so administrators see it in
+  plain text. `PasswordType` would hide it, but Kimai's system configuration would then save an
+  empty value when the form is submitted without retyping it — needs a decision before changing.
+- Editing any field of a review row auto-checks that row client-side. The server still registers
+  only what is posted (ADR-0001), but it is an implicit selection; confirm with Diego whether to
+  keep it.
