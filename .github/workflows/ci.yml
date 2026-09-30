@@ -22,6 +22,15 @@ jobs:
           extensions: intl, gd, zip, xsl, pdo_mysql
           coverage: pcov
 
+      # unit tests (composer.lock) and the installation check (docker/Dockerfile) must use the same
+      # Kimai; dependabot bumps them in separate PRs, this makes the mismatch visible
+      - name: Mesma versão do Kimai no composer.lock e no Dockerfile
+        run: |
+          lock=$(php -r 'foreach (json_decode(file_get_contents("composer.lock"), true)["packages-dev"] as $p) { if ($p["name"] === "kimai/kimai") { echo ltrim($p["version"], "v"); } }')
+          docker=$(sed -n 's/^ARG KIMAI_VERSION=//p' docker/Dockerfile)
+          echo "composer.lock: ${lock:-?}, docker/Dockerfile: ${docker:-?}"
+          test -n "$lock" && test "$lock" = "$docker"
+
       # Kimai itself is a dev dependency: its classes are needed to mock them, no database or kernel
       - name: Instalar dependências
         run: composer install --no-interaction --no-progress
