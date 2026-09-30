@@ -40,7 +40,7 @@ services:
       start_interval: 10s
     environment:
       DATABASE_URL: "mysql://kimai:kimai@gcal-db/kimai?charset=utf8mb4&serverVersion=8.0.33"
-      ADMINMAIL: admin@example.com
+      ADMINMAIL: "${KIMAI_ADMIN_USER:-admin@example.com}"
       ADMINPASS: "${KIMAI_ADMIN_PASSWORD:-change-me-please}"
       # behind a tunnel/reverse proxy set these, otherwise the OAuth redirect URI is built with http://
       TRUSTED_PROXIES: "${TRUSTED_PROXIES:-}"
