@@ -2,7 +2,8 @@
 
 ## Status
 
-Aceita — 2026-09-28.
+Aceita — 2026-09-28. Critério de casamento das regras de mapeamento (etapa 4) complementado pela
+[ADR-0006](0006-regras-de-mapeamento-por-palavra-inteira.md).
 
 ## Contexto
 

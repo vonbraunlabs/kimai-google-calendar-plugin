@@ -26,7 +26,8 @@ use App\Repository\Query\ProjectFormTypeQuery;
  *   3. name found in the description
  *   4. first mapping rule whose keyword is found in the title
  *
- * Numbers and names are matched as whole words, case-insensitive; the longest match wins.
+ * Numbers, names and rule keywords are matched as whole words, case-insensitive (TextMatcher);
+ * for numbers and names the longest match wins.
  */
 class TargetResolver
 {
@@ -186,7 +187,7 @@ class TargetResolver
         usort($needles, fn (array $a, array $b) => mb_strlen($b[0]) <=> mb_strlen($a[0]));
 
         foreach ($needles as [$needle, $candidate]) {
-            if (preg_match('/(?<![\p{L}\p{N}])' . preg_quote($needle, '/') . '(?![\p{L}\p{N}])/iu', $text) === 1) {
+            if (TextMatcher::containsWord($text, $needle)) {
                 return $candidate;
             }
         }

@@ -42,4 +42,13 @@ class MappingRulesTest extends TestCase
         self::assertSame(['acme', 'daily'], array_column($matching, 'keyword'));
         self::assertSame([], MappingRules::matching($rules, 'Nothing here'));
     }
+
+    public function testKeywordMatchesOnlyAsWholeWord(): void
+    {
+        $rules = 'QA => Quality / Tests';
+
+        self::assertCount(1, MappingRules::matching($rules, '[GPV0374][QA] Estabelecimento de fluxo'));
+        self::assertCount(1, MappingRules::matching($rules, '[GPV0377][Factum] Testes de QA'));
+        self::assertSame([], MappingRules::matching($rules, 'QUALIDADE'));
+    }
 }

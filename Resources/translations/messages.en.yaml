@@ -13,7 +13,7 @@ gcal:
     settings: 'Import settings'
     calendar: 'Calendar'
     mapping_rules: 'Mapping rules'
-    mapping_rules_help: 'Used when the project or activity is not found by its number or name in the title or description. One rule per line: "keyword => Project", "keyword => Project / Activity" or "keyword => / Activity" (name or number). The first rule whose keyword is contained in the title wins.'
+    mapping_rules_help: 'Used when the project or activity is not found by its number or name in the title or description. One rule per line: "keyword => Project", "keyword => Project / Activity" or "keyword => / Activity" (name or number). The keyword must appear in the title as a whole word ("QA" matches "[QA] Review" but not "QUALITY"); the first matching rule wins.'
     sync_events: 'Load calendar events'
     skip_declined: 'Ignore declined events'
     skip_free: 'Ignore events marked as "free"'

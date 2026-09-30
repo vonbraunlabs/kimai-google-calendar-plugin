@@ -25,3 +25,4 @@ não se troca só editando um arquivo.
 | [0003](0003-identificacao-de-projeto-e-atividade.md) | Ordem de identificação de projeto e atividade |
 | [0004](0004-ui-segue-o-tema-do-kimai.md) | A UI segue o tema do Kimai, sem identidade visual própria |
 | [0005](0005-testes-com-kimai-como-dependencia-de-dev.md) | Testes com o Kimai como dependência de desenvolvimento, sem banco |
+| [0006](0006-regras-de-mapeamento-por-palavra-inteira.md) | Palavras-chave das regras de mapeamento casam como palavra inteira |

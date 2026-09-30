@@ -13,7 +13,7 @@ gcal:
     settings: 'Configurações de importação'
     calendar: 'Agenda'
     mapping_rules: 'Regras de mapeamento'
-    mapping_rules_help: 'Usadas quando o projeto ou a atividade não é encontrado pelo código ou pelo nome no título ou na descrição. Uma regra por linha: "palavra-chave => Projeto", "palavra-chave => Projeto / Atividade" ou "palavra-chave => / Atividade" (nome ou código). Vale a primeira regra cuja palavra-chave esteja contida no título.'
+    mapping_rules_help: 'Usadas quando o projeto ou a atividade não é encontrado pelo código ou pelo nome no título ou na descrição. Uma regra por linha: "palavra-chave => Projeto", "palavra-chave => Projeto / Atividade" ou "palavra-chave => / Atividade" (nome ou código). A palavra-chave precisa aparecer no título como palavra inteira ("QA" casa com "[QA] Revisão", mas não com "QUALIDADE"); vale a primeira regra que casar.'
     sync_events: 'Carregar eventos da agenda'
     skip_declined: 'Ignorar eventos recusados'
     skip_free: 'Ignorar eventos marcados como "disponível"'

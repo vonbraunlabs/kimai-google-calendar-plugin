@@ -84,13 +84,13 @@ The project is searched in this order, and the first hit wins:
 
 The activity is then searched the same way, among the activities of that project plus the global ones, if the project allows them.
 
-- Numbers and names are matched as whole words and case-insensitively. For example, a project called "QA" does not match "Quarterly".
+- Numbers, names and rule keywords are matched as whole words and case-insensitively. For example, a project called "QA" does not match "Quarterly".
 - When several names match, the longest one wins, so "ACME Website" beats "ACME".
 - Anything that cannot be identified stays blank, and the user picks it in the table.
 
 ### Mapping rules
 
-Write one rule per line. The keyword is matched case-insensitively against the title. Project and activity can be given by name or by number:
+Write one rule per line. The keyword is matched against the title as a whole word and case-insensitively, like numbers and names: `QA` matches `[GPV0374][QA] Process setup` and `QA tests`, but not `QUALITY`. When several rules match, the first one wins. Project and activity can be given by name or by number:
 
 ```
 # keyword => Project

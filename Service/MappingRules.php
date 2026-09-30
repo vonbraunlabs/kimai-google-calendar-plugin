@@ -17,7 +17,8 @@ namespace KimaiPlugin\GoogleCalendarBundle\Service;
  *   keyword => / Activity
  *
  * Project and activity can be given by name or by number (code).
- * The keyword is matched case-insensitive against the title. Lines starting with # are comments.
+ * The keyword is matched as a whole word, case-insensitive, against the title (ADR-0006).
+ * Lines starting with # are comments.
  */
 final class MappingRules
 {
@@ -50,7 +51,7 @@ final class MappingRules
     }
 
     /**
-     * Returns all rules whose keyword is contained in the title, in their configured order.
+     * Returns all rules whose keyword is found as a whole word in the title, in their configured order.
      *
      * @return array<int, array{keyword: string, project: string|null, activity: string|null}>
      */
@@ -58,7 +59,7 @@ final class MappingRules
     {
         return array_values(array_filter(
             self::parse($rules),
-            fn (array $rule) => mb_stripos($title, $rule['keyword']) !== false
+            fn (array $rule) => TextMatcher::containsWord($title, $rule['keyword'])
         ));
     }
 }
