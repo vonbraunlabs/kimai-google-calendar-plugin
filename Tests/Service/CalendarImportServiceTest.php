@@ -86,6 +86,8 @@ class CalendarImportServiceTest extends TestCase
             'gcal.error_missing_target' => 'missing target',
             'gcal.error_end_before_begin' => 'end before begin',
             'gcal.no_title' => '(no title)',
+            'gcal.error_unexpected' => 'unexpected error',
+            'gcal.error_not_allowed' => 'not allowed',
         ][$id] ?? $id, $parameters));
 
         $timesheetService = $this->createTimesheetService(
@@ -333,7 +335,7 @@ class CalendarImportServiceTest extends TestCase
         self::assertSame('missing target', $items['missing']->error);
         self::assertSame('end before begin', $items['reversed']->error);
         self::assertSame('Overlapping record.', $items['invalid']->error);
-        self::assertSame('Database is down', $items['broken']->error);
+        self::assertSame('unexpected error', $items['broken']->error, 'no internal details in the UI');
     }
 
     public function testRegisterRespectsKimaiPermissions(): void

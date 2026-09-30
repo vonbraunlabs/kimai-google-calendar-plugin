@@ -10,6 +10,7 @@
 namespace KimaiPlugin\GoogleCalendarBundle\Service;
 
 use App\Entity\Timesheet;
+use App\Security\AccessDeniedException;
 use App\Timesheet\TimesheetService;
 use App\Validator\ValidationFailedException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -185,9 +186,12 @@ class CalendarImportService
                     $messages[] = $violation->getMessage();
                 }
                 $item->error = implode(' ', $messages) ?: $ex->getMessage();
+            } catch (AccessDeniedException) {
+                $item->error = $this->translator->trans('gcal.error_not_allowed');
             } catch (\Exception $ex) {
+                // the details (e.g. SQL) go to the log only, the user gets a translated message
                 $this->logger->error('Google Calendar import failed: ' . $ex->getMessage(), ['exception' => $ex]);
-                $item->error = $ex->getMessage();
+                $item->error = $this->translator->trans('gcal.error_unexpected');
             }
 
             // a failed flush closes the entity manager, the remaining rows cannot be saved

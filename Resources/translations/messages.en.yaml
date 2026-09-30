@@ -47,6 +47,8 @@ gcal:
     meeting_description: 'Attended the meeting ''%title%'''
     error_missing_target: 'Select a project and an activity.'
     error_end_before_begin: 'The end must be after the start.'
+    error_unexpected: 'The record could not be saved because of an unexpected error; details are in the Kimai log.'
+    error_not_allowed: 'You are not allowed to create this record (Kimai permissions).'
     no_title: '(no title)'
     primary_calendar: '%name% (primary)'
     primary_calendar_fallback: 'Primary calendar'

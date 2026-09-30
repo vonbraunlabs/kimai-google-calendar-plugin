@@ -47,6 +47,8 @@ gcal:
     meeting_description: 'Participação na reunião ''%title%'''
     error_missing_target: 'Selecione um projeto e uma atividade.'
     error_end_before_begin: 'O fim deve ser posterior ao início.'
+    error_unexpected: 'O registro não pôde ser salvo por um erro inesperado; os detalhes estão no log do Kimai.'
+    error_not_allowed: 'Você não tem permissão para criar este registro (permissões do Kimai).'
     no_title: '(sem título)'
     primary_calendar: '%name% (principal)'
     primary_calendar_fallback: 'Agenda principal'
