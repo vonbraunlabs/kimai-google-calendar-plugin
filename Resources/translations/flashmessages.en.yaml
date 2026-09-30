@@ -1,0 +1,8 @@
+gcal:
+    not_configured: 'The Google OAuth client is not configured yet.'
+    connected: 'Your Google account was connected.'
+    disconnected: 'Your Google account was disconnected.'
+    connect_failed: 'Google connection failed: %reason%'
+    invalid_period: 'Invalid period: %reason%'
+    registered: 'The selected items were registered.'
+    registered_with_errors: 'Some items could not be registered, see the marked rows.'
