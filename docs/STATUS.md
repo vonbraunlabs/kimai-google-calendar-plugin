@@ -45,16 +45,35 @@ about *where we stopped and what to do next*.
 - Technical debts from session 1 resolved: stale `GoogleCalendarLink` docblock, unused
   `source_updated` column (removed from the not-yet-shipped initial migration), Kimai version
   mismatch between unit tests and the installation check.
+- Diego's first manual test on the local stack failed with "Table kimai2_google_calendar_accounts
+  doesn't exist": Kimai's entrypoint installs Kimai but not plugins. `docker/Dockerfile` now
+  runs the plugin install on every start, right after `kimai:reload` (before it, on a cold cache,
+  the install subprocess hit Kimai's 60 s timeout and left half-created tables without a
+  recorded migration — the local DB was repaired by dropping the three empty plugin tables).
+- `.env` (holds the Google client secret) was neither git-ignored nor excluded from the Docker
+  image; now it is, with `.env.example`. `docker-compose.yml` reads `KIMAI_ADMIN_USER`, with
+  placeholder defaults only — real credentials live in `.env`.
+- Connecting to Google then failed with `Erro 400: redirect_uri_mismatch`. Not a plugin bug: the
+  plugin sends `http://localhost:8001/google-calendar/oauth/callback` (built from the host in the
+  browser — `127.0.0.1` gives a different URI), and it must be registered verbatim in the OAuth
+  client (type *Web application*) in Google Cloud. Diego was about to fix the registration.
 
 ## Next steps
 
-1. Review and merge the issue #1 PR into `develop` (1 human approval).
-2. Manual validation of the OAuth flow with a real Google client (issue #1 DoR) — not automatable.
-3. Integrate `develop` into `master` and tag the first release (`version` in `composer.json` is
+1. Register `http://localhost:8001/google-calendar/oauth/callback` in the Google Cloud OAuth
+   client and retry the connection. Rotate the client secret: it appeared in a Claude Code
+   conversation on 2026-09-30 (an IDE selection of `.env`).
+2. Manual validation of the OAuth flow end to end (connect → load a period → register) — issue #1
+   DoR, not automatable. Record the result in PR #2.
+3. Review and merge PR #2 into `develop` (1 human approval + required checks).
+4. Integrate `develop` into `master` and tag the first release (`version` in `composer.json` is
    already `1.0.0`).
 
 ## Known technical debts
 
+- The admin password of the local stack is the one from the database's first start;
+  `KIMAI_ADMIN_PASSWORD` only applies when the admin user is created (`--ignore-existing`).
+  Change it in Kimai, or `docker compose down -v` to recreate the stack.
 - A local database that ran the initial migration before 2026-09-30 still has the
   `source_updated` column; it is nullable and unmapped, so harmless. Drop it by hand or recreate
   the dev database (`docker compose down -v`).
