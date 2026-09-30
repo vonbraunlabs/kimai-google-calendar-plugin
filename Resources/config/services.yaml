@@ -1,0 +1,11 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    KimaiPlugin\GoogleCalendarBundle\:
+        resource: '../../*'
+        exclude:
+            - '../../{DependencyInjection,Entity,Migrations,Resources,Tests,vendor}'
+            - '../../Service/{ImportItem,MappingRules,GoogleApiException}.php'
