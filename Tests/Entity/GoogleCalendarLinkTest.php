@@ -30,16 +30,13 @@ class GoogleCalendarLinkTest extends TestCase
         self::assertSame('task', $link->getSourceType());
         self::assertSame('task-1', $link->getSourceId());
         self::assertNull($link->getTimesheet());
-        self::assertNull($link->getSourceUpdated());
         self::assertNull($link->getTitle());
         self::assertEqualsWithDelta(time(), $link->getCreatedAt()->getTimestamp(), 5);
 
         $link->setTimesheet($timesheet);
-        $link->setSourceUpdated('2026-09-28T10:00:00Z');
         $link->setTitle(str_repeat('x', 300));
 
         self::assertSame($timesheet, $link->getTimesheet());
-        self::assertSame('2026-09-28T10:00:00Z', $link->getSourceUpdated());
         self::assertSame(255, mb_strlen($link->getTitle()), 'title is cut to the column length');
 
         $link->setTitle(null);

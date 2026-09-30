@@ -17,8 +17,8 @@ use KimaiPlugin\GoogleCalendarBundle\Repository\GoogleCalendarLinkRepository;
 /**
  * Remembers which Google event/task produced which timesheet, so imports are idempotent.
  *
- * If the timesheet gets deleted in Kimai, the link stays (with timesheet = null)
- * so the item is not imported again.
+ * If the timesheet gets deleted in Kimai, the link stays with timesheet = null: the item shows up
+ * as pending again in the review table, and registering it re-uses this link (ADR-0001).
  */
 #[ORM\Entity(repositoryClass: GoogleCalendarLinkRepository::class)]
 #[ORM\Table(name: 'kimai2_google_calendar_links')]
@@ -46,10 +46,6 @@ class GoogleCalendarLink
 
     #[ORM\Column(name: 'source_id', type: Types::STRING, length: 255, nullable: false)]
     private string $sourceId;
-
-    /** Google "updated" timestamp of the imported revision */
-    #[ORM\Column(name: 'source_updated', type: Types::STRING, length: 50, nullable: true)]
-    private ?string $sourceUpdated = null;
 
     #[ORM\Column(name: 'title', type: Types::STRING, length: 255, nullable: true)]
     private ?string $title = null;
@@ -93,16 +89,6 @@ class GoogleCalendarLink
     public function getSourceId(): string
     {
         return $this->sourceId;
-    }
-
-    public function getSourceUpdated(): ?string
-    {
-        return $this->sourceUpdated;
-    }
-
-    public function setSourceUpdated(?string $sourceUpdated): void
-    {
-        $this->sourceUpdated = $sourceUpdated;
     }
 
     public function getTitle(): ?string
