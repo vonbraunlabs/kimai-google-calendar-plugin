@@ -208,6 +208,31 @@ class GoogleCalendarControllerTest extends TestCase
         self::assertSame(['Team' => 'team@group', 'Primary calendar' => 'primary'], $this->formOptions['calendars']);
     }
 
+    public function testIndexDisconnectsWhenGoogleRevokedTheAccess(): void
+    {
+        $this->account = Fixtures::account($this->user);
+        $this->client->method('listCalendars')->willThrowException(new GoogleApiException('revoked', true));
+        $this->accountRepository->expects(self::once())->method('save')->with($this->account);
+
+        $response = $this->controller(new Request())->indexAction(new Request());
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertFalse($this->account->isConnected());
+        self::assertNull($this->rendered[1]['form'], 'no settings form for a disconnected account');
+        self::assertCount(1, $this->flashes('error'));
+    }
+
+    public function testIndexKeepsARefreshedTokenWhenListingFails(): void
+    {
+        $this->account = Fixtures::account($this->user);
+        $this->client->method('listCalendars')->willThrowException(new GoogleApiException('rate limit'));
+        $this->accountRepository->expects(self::once())->method('save')->with($this->account);
+
+        $this->controller(new Request())->indexAction(new Request());
+
+        self::assertTrue($this->account->isConnected());
+    }
+
     public function testIndexSavesSubmittedSettings(): void
     {
         $this->account = Fixtures::account($this->user);

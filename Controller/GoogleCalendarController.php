@@ -51,10 +51,12 @@ final class GoogleCalendarController extends AbstractController
     {
         $account = $this->accountRepository->getOrCreate($this->getUser());
         $form = null;
+        // listing the calendars disconnects the account if Google revoked the access
+        $calendars = $account->isConnected() ? $this->getCalendarChoices($account) : [];
 
         if ($account->isConnected()) {
             $form = $this->createForm(GoogleCalendarSettingsForm::class, $account, [
-                'calendars' => $this->getCalendarChoices($account),
+                'calendars' => $calendars,
                 'action' => $this->generateUrl('google_calendar'),
             ]);
             $form->handleRequest($request);
@@ -257,10 +259,14 @@ final class GoogleCalendarController extends AbstractController
                     $choices[$label] = $calendar['id'];
                 }
             }
-            // listing calendars may have refreshed the access token
-            $this->accountRepository->save($account);
         } catch (GoogleApiException $ex) {
+            if ($ex->isAuthorizationLost()) {
+                $account->disconnect();
+            }
             $this->flashError('gcal.connect_failed', $this->describe($ex));
+        } finally {
+            // the access token might have been refreshed (or the account disconnected)
+            $this->accountRepository->save($account);
         }
 
         if (!\in_array('primary', $choices, true)) {
