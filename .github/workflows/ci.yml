@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, master]
+  push:
+    branches: [develop, master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: intl, gd, zip, xsl, pdo_mysql
+          coverage: pcov
+
+      # Kimai itself is a dev dependency: its classes are needed to mock them, no database or kernel
+      - name: Instalar dependências
+        run: composer install --no-interaction --no-progress
+
+      # Mesmo comando do CLAUDE.md §4 / skill pre-pr-check
+      - name: Testes + cobertura
+        run: composer test-coverage
+
+      - name: Gate de 80% de cobertura de linhas
+        run: php .github/scripts/coverage-gate.php coverage/clover.xml 80
+
+      - uses: actions/upload-artifact@v7.0.1
+        if: always()
+        with:
+          name: coverage
+          path: coverage/cobertura.xml
+
+  kimai-install:
+    # the plugin must load, install and render inside a real Kimai (the version pinned in docker/Dockerfile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Subir Kimai com o plugin
+        # the first start runs every Kimai migration, see the healthcheck in docker-compose.yml
+        run: docker compose -p gcal-verify up -d --build --wait --wait-timeout 1200
+        env:
+          KIMAI_ADMIN_PASSWORD: ci-password-123
+
+      - name: Instalar o plugin e validar o schema
+        run: |
+          docker compose -p gcal-verify exec -T gcal-kimai bin/console kimai:bundle:google-calendar:install -n
+          docker compose -p gcal-verify exec -T gcal-kimai bin/console kimai:plugins | grep GoogleCalendarBundle
+          docker compose -p gcal-verify exec -T gcal-kimai bin/console lint:twig var/plugins/GoogleCalendarBundle/Resources/views
+          # no pending schema changes for the plugin tables; written to a file first, so a failing
+          # command fails the step instead of producing an empty (passing) grep
+          docker compose -p gcal-verify exec -T gcal-kimai bin/console doctrine:schema:update --dump-sql > schema.sql
+          ! grep -i google_calendar schema.sql
+
+      - name: Página de login responde
+        run: curl -fsS -o /dev/null http://localhost:8001/en/login
+
+      - name: Logs em caso de falha
+        if: failure()
+        run: docker compose -p gcal-verify logs --tail=200
+
+      - name: Derrubar
+        if: always()
+        run: docker compose -p gcal-verify down -v
+
+  comment:
+    needs: [tests]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          name: coverage
+          path: coverage
+        continue-on-error: true
+
+      - name: Gerar resumo de cobertura
+        if: hashFiles('coverage/cobertura.xml') != ''
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage/cobertura.xml
+          badge: true
+          format: markdown
+          output: file
+          thresholds: '80 90'
+
+      - name: Comentar na PR
+        if: hashFiles('coverage/cobertura.xml') != ''
+        uses: marocchino/sticky-pull-request-comment@v3.0.5
+        with:
+          header: cobertura-de-testes
+          path: code-coverage-results.md
