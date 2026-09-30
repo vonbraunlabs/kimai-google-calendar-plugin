@@ -125,12 +125,12 @@ Only Docker is needed.
 docker compose run --rm gcal-test sh -c \
   'composer install -n && composer test-coverage && php .github/scripts/coverage-gate.php coverage/clover.xml 80'
 
-# a local Kimai with the plugin baked in, at http://localhost:8001 (admin@example.com)
-KIMAI_ADMIN_PASSWORD=choose-one docker compose up -d --build --wait
-docker compose exec gcal-kimai bin/console kimai:bundle:google-calendar:install -n
+# a local Kimai with the plugin baked in, at http://localhost:8001
+cp .env.example .env   # then set the admin credentials and, to connect Google, the OAuth client
+docker compose up -d --build --wait
 ```
 
-The plugin is copied into the image, not mounted, so rebuild after each change (`docker compose up -d --build`). To connect Google locally, set `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET`, and register `http://localhost:8001/google-calendar/oauth/callback` as a redirect URI.
+The plugin is installed (its tables created and new migrations applied) automatically on every container start. It is copied into the image, not mounted, so rebuild after each change (`docker compose up -d --build`). The first start from an empty database can take several minutes. To connect Google locally, register `http://localhost:8001/google-calendar/oauth/callback` as a redirect URI of the OAuth client. `.env` is git-ignored and kept out of the image: never commit it.
 
 Contribution workflow, test strategy and architecture decisions: [CLAUDE.md](CLAUDE.md) and [docs/adrs](docs/adrs/README.md).
 

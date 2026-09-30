@@ -37,7 +37,7 @@ The project uses continuous integration on the development branch. `master` is p
 No code may be submitted in a Pull Request without reaching at least 80% line coverage in unit tests (PHPUnit). The strategy is in ADR-0005: Kimai is a dev dependency, with no database or kernel in the tests.
 *   **Run (no local PHP, via Docker):** `docker compose run --rm gcal-test sh -c 'composer install -n && composer test-coverage && php .github/scripts/coverage-gate.php coverage/clover.xml 80'`.
 *   **Run (local PHP 8.3 + pcov):** `composer install && composer test-coverage && php .github/scripts/coverage-gate.php coverage/clover.xml 80`.
-*   **Real installation in Kimai:** `docker compose up -d --build --wait` and `docker compose exec gcal-kimai bin/console kimai:bundle:google-calendar:install -n` — covers migrations and templates, which PHPUnit does not exercise.
+*   **Real installation in Kimai:** `docker compose up -d --build --wait` (`cp .env.example .env` first) — `docker/Dockerfile` makes the container run `kimai:bundle:google-calendar:install` on every start, right after Kimai's `kimai:reload`. Covers migrations and templates, which PHPUnit does not exercise.
 *   **Autonomous fixing:** if validation fails for insufficient coverage, write the missing tests before moving on to the PR. Never lower the threshold or widen the exclusions in `phpunit.xml.dist` to pass the gate.
 *   **CI:** `.github/workflows/ci.yml` runs the same commands on every PR to `develop`/`master` (job `tests`), installs the plugin in a real Kimai of the version pinned in `docker/Dockerfile` (job `kimai-install`) and comments the coverage summary on the PR. The gate uses the same `.github/scripts/coverage-gate.php` script as the local environment.
 
@@ -55,4 +55,4 @@ Use these instead of rebuilding the flow by hand:
 *   Screens follow Kimai's theme (ADR-0004): they extend `base.html.twig`, use only Tabler components and have no colors, fonts or stylesheets of their own. See the `ui-kimai` skill for the checklist.
 
 ## 7. Secrets
-`google-api-secret.json`, `client_secret*.json` and any real Client Secret/token never go into a commit, log, flash message, PR description or issue comment. Test credentials go through environment variables (`GOOGLE_CALENDAR_CLIENT_ID`/`GOOGLE_CALENDAR_CLIENT_SECRET`) or the system configuration of the local Kimai.
+`.env`, `google-api-secret.json`, `client_secret*.json` and any real Client Secret/token never go into a commit, the Docker image, log, flash message, PR description or issue comment. Test credentials go through environment variables (`GOOGLE_CALENDAR_CLIENT_ID`/`GOOGLE_CALENDAR_CLIENT_SECRET`) or the system configuration of the local Kimai.
