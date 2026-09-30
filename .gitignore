@@ -5,3 +5,4 @@
 /google-api-secret.json
 client_secret*.json
 /coverage/
+/.env

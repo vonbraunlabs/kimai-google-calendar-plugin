@@ -11,3 +11,5 @@ composer.lock
 google-api-secret.json
 client_secret*.json
 *.md
+.env
+.env.*
