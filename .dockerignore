@@ -1,0 +1,13 @@
+.git
+.github
+.claude
+.phpunit.cache
+coverage
+docker
+docs
+Tests
+vendor
+composer.lock
+google-api-secret.json
+client_secret*.json
+*.md
