@@ -37,6 +37,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\Translator;
 use Twig\Environment;
 
@@ -133,6 +134,27 @@ class GoogleCalendarControllerTest extends TestCase
         return $this->session->getFlashBag()->get($type);
     }
 
+    /**
+     * Without translations the translator returns the keys; this adds some, to check parameters.
+     *
+     * @param array<string, string> $messages
+     */
+    private function translations(array $messages, string $domain = 'flashmessages'): void
+    {
+        $this->translator->addLoader('array', new ArrayLoader());
+        $this->translator->addResource('array', $messages, 'en', $domain);
+    }
+
+    private const REASONS = [
+        'gcal.connect_failed' => 'failed: %reason%',
+        'gcal.invalid_period' => 'invalid: %reason%',
+        'gcal.error_invalid_state' => 'invalid state',
+        'gcal.error_not_authorized' => 'not authorized (%error%)',
+        'gcal.error_authorization' => 'refused: %message%',
+        'gcal.error_period_reversed' => 'reversed',
+        'gcal.error_period_too_long' => 'max %days% days',
+    ];
+
     private function assertRedirect(Response $response, string $url): void
     {
         self::assertInstanceOf(RedirectResponse::class, $response);
@@ -157,6 +179,7 @@ class GoogleCalendarControllerTest extends TestCase
     {
         $this->account = Fixtures::account($this->user);
         $this->account->setCalendarId('old@group');
+        $this->translations(['gcal.primary_calendar' => '%name% (primary)'], 'messages');
         $this->client->method('listCalendars')->willReturn([
             ['id' => 'me@gmail.com', 'summary' => 'Me', 'primary' => true],
             ['id' => 'team@group', 'summary' => 'Team', 'summaryOverride' => 'My team'],
@@ -172,6 +195,17 @@ class GoogleCalendarControllerTest extends TestCase
             'My team' => 'team@group',
             'old@group' => 'old@group',
         ], $this->formOptions['calendars'], 'the current calendar stays selectable even if it is not listed anymore');
+    }
+
+    public function testIndexOffersThePrimaryCalendarEvenIfNotListed(): void
+    {
+        $this->account = Fixtures::account($this->user);
+        $this->translations(['gcal.primary_calendar_fallback' => 'Primary calendar'], 'messages');
+        $this->client->method('listCalendars')->willReturn([['id' => 'team@group', 'summary' => 'Team']]);
+
+        $this->controller(new Request())->indexAction(new Request());
+
+        self::assertSame(['Team' => 'team@group', 'Primary calendar' => 'primary'], $this->formOptions['calendars']);
     }
 
     public function testIndexSavesSubmittedSettings(): void
@@ -218,10 +252,12 @@ class GoogleCalendarControllerTest extends TestCase
         $request = new Request(['state' => 'forged', 'code' => 'c']);
         $this->client->expects(self::never())->method('authorize');
 
+        $this->translations(self::REASONS);
+
         $response = $this->controller($request)->callbackAction($request);
 
         $this->assertRedirect($response, '/google_calendar?_locale=en');
-        self::assertSame(['gcal.connect_failed'], $this->flashes('error'));
+        self::assertSame(['failed: invalid state'], $this->flashes('error'));
         self::assertNull($this->session->get('google_calendar_oauth_state'), 'state is single use');
     }
 
@@ -229,10 +265,11 @@ class GoogleCalendarControllerTest extends TestCase
     {
         $this->session->set('google_calendar_oauth_state', 'expected');
         $request = new Request(['state' => 'expected', 'error' => 'access_denied']);
+        $this->translations(self::REASONS);
 
         $this->controller($request)->callbackAction($request);
 
-        self::assertCount(1, $this->flashes('error'));
+        self::assertSame(['failed: not authorized (access_denied)'], $this->flashes('error'));
     }
 
     public function testCallbackConnectsTheAccountInTheOriginalLocale(): void
@@ -254,12 +291,25 @@ class GoogleCalendarControllerTest extends TestCase
     {
         $this->session->set('google_calendar_oauth_state', 'expected');
         $request = new Request(['state' => 'expected', 'code' => 'the-code']);
-        $this->client->method('authorize')->willThrowException(new GoogleApiException('invalid_client'));
+        $this->client->method('authorize')->willThrowException(new GoogleApiException('Google authorization failed: bad client', translationKey: 'gcal.error_authorization', translationParameters: ['%message%' => 'bad client']));
         $this->accountRepository->expects(self::never())->method('save');
+        $this->translations(self::REASONS);
 
         $this->controller($request)->callbackAction($request);
 
-        self::assertCount(1, $this->flashes('error'));
+        self::assertSame(['failed: refused: bad client'], $this->flashes('error'), 'the translated reason, not the English log message');
+    }
+
+    public function testCallbackShowsTheMessageOfUntranslatedFailures(): void
+    {
+        $this->session->set('google_calendar_oauth_state', 'expected');
+        $request = new Request(['state' => 'expected', 'code' => 'the-code']);
+        $this->client->method('authorize')->willThrowException(new GoogleApiException('invalid_client'));
+        $this->translations(self::REASONS);
+
+        $this->controller($request)->callbackAction($request);
+
+        self::assertSame(['failed: invalid_client'], $this->flashes('error'));
     }
 
     public function testDisconnect(): void
@@ -292,26 +342,27 @@ class GoogleCalendarControllerTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{0: array<string, string>}>
+     * @return iterable<string, array{0: array<string, string>, 1: string}>
      */
     public static function invalidPeriods(): iterable
     {
-        yield 'end before start' => [['from' => '2026-09-28', 'to' => '2026-09-21']];
-        yield 'too long' => [['from' => '2026-01-01', 'to' => '2026-09-21']];
+        yield 'end before start' => [['from' => '2026-09-28', 'to' => '2026-09-21'], 'invalid: reversed'];
+        yield 'too long' => [['from' => '2026-01-01', 'to' => '2026-09-21'], 'invalid: max 62 days'];
     }
 
     /**
      * @dataProvider invalidPeriods
      */
-    public function testReviewRejectsInvalidPeriods(array $query): void
+    public function testReviewRejectsInvalidPeriods(array $query, string $flash): void
     {
         $this->account = Fixtures::account($this->user);
         $this->importService->expects(self::never())->method('loadItems');
+        $this->translations(self::REASONS);
 
         $response = $this->controller(new Request())->reviewAction(new Request($query));
 
         $this->assertRedirect($response, '/google_calendar');
-        self::assertSame(['gcal.invalid_period'], $this->flashes('error'));
+        self::assertSame([$flash], $this->flashes('error'));
     }
 
     public function testReviewReportsGoogleErrors(): void

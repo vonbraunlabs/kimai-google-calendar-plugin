@@ -47,6 +47,9 @@ gcal:
     meeting_description: 'Participação na reunião ''%title%'''
     error_missing_target: 'Selecione um projeto e uma atividade.'
     error_end_before_begin: 'O fim deve ser posterior ao início.'
+    no_title: '(sem título)'
+    primary_calendar: '%name% (principal)'
+    primary_calendar_fallback: 'Agenda principal'
     help:
         title: 'Configuração do Google (administrador)'
         intro: 'Feita uma única vez para todo o Kimai. Depois, cada usuário conecta a própria conta nesta página, sem precisar de credenciais.'

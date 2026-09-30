@@ -9,18 +9,40 @@
 
 namespace KimaiPlugin\GoogleCalendarBundle\Service;
 
+/**
+ * The message is English, for logs; the translation key (flashmessages domain) is what users see.
+ */
 final class GoogleApiException extends \RuntimeException
 {
     /**
-     * True if the refresh token was revoked or expired and the user has to connect again.
+     * @param bool $authorizationLost true if the refresh token was revoked or expired and the user has to connect again
+     * @param array<string, string> $translationParameters
      */
-    public function __construct(string $message, private readonly bool $authorizationLost = false, ?\Throwable $previous = null)
-    {
+    public function __construct(
+        string $message,
+        private readonly bool $authorizationLost = false,
+        ?\Throwable $previous = null,
+        private readonly ?string $translationKey = null,
+        private readonly array $translationParameters = [],
+    ) {
         parent::__construct($message, 0, $previous);
     }
 
     public function isAuthorizationLost(): bool
     {
         return $this->authorizationLost;
+    }
+
+    public function getTranslationKey(): ?string
+    {
+        return $this->translationKey;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getTranslationParameters(): array
+    {
+        return $this->translationParameters;
     }
 }

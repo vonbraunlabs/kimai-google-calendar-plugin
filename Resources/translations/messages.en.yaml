@@ -47,6 +47,9 @@ gcal:
     meeting_description: 'Attended the meeting ''%title%'''
     error_missing_target: 'Select a project and an activity.'
     error_end_before_begin: 'The end must be after the start.'
+    no_title: '(no title)'
+    primary_calendar: '%name% (primary)'
+    primary_calendar_fallback: 'Primary calendar'
     help:
         title: 'Google setup (administrator)'
         intro: 'Done once for the whole Kimai installation. Afterwards every user connects their own account on this page, without any credentials.'

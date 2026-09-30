@@ -65,7 +65,7 @@ class GoogleApiClient
         ]);
 
         if (empty($token['refresh_token'])) {
-            throw new GoogleApiException('Google did not return a refresh token, please remove the app access in your Google account and connect again.');
+            throw new GoogleApiException('Google did not return a refresh token, please remove the app access in your Google account and connect again.', translationKey: 'gcal.error_no_refresh_token');
         }
 
         $account->setRefreshToken($this->encryptor->encrypt($token['refresh_token']));
@@ -181,13 +181,13 @@ class GoogleApiClient
             $status = $response->getStatusCode();
             $data = $response->toArray(false);
         } catch (ExceptionInterface $ex) {
-            throw new GoogleApiException('Google API request failed: ' . $ex->getMessage(), false, $ex);
+            throw new GoogleApiException('Google API request failed: ' . $ex->getMessage(), false, $ex, 'gcal.error_unreachable', ['%message%' => $ex->getMessage()]);
         }
 
         if ($status >= 400) {
             $message = $data['error']['message'] ?? ($data['error_description'] ?? ('HTTP ' . $status));
 
-            throw new GoogleApiException('Google API error: ' . $message, $status === 401);
+            throw new GoogleApiException('Google API error: ' . $message, $status === 401, null, 'gcal.error_api', ['%message%' => $message]);
         }
 
         return $data;
@@ -204,7 +204,7 @@ class GoogleApiClient
 
         $refreshToken = $this->encryptor->decrypt($account->getRefreshToken());
         if ($refreshToken === null || $refreshToken === '') {
-            throw new GoogleApiException('The Google account is not connected.', true);
+            throw new GoogleApiException('The Google account is not connected.', true, null, 'gcal.error_not_connected');
         }
 
         $token = $this->tokenRequest([
@@ -232,7 +232,7 @@ class GoogleApiClient
     private function tokenRequest(array $params): array
     {
         if (!$this->configuration->isConfigured()) {
-            throw new GoogleApiException('The Google OAuth client is not configured, see the plugin settings in the system configuration.');
+            throw new GoogleApiException('The Google OAuth client is not configured, see the plugin settings in the system configuration.', translationKey: 'gcal.not_configured');
         }
 
         $params['client_id'] = $this->configuration->getClientId();
@@ -243,14 +243,14 @@ class GoogleApiClient
             $status = $response->getStatusCode();
             $data = $response->toArray(false);
         } catch (ExceptionInterface $ex) {
-            throw new GoogleApiException('Google token request failed: ' . $ex->getMessage(), false, $ex);
+            throw new GoogleApiException('Google token request failed: ' . $ex->getMessage(), false, $ex, 'gcal.error_unreachable', ['%message%' => $ex->getMessage()]);
         }
 
         if ($status >= 400 || empty($data['access_token'])) {
             $error = $data['error'] ?? 'unknown_error';
             $message = $data['error_description'] ?? $error;
 
-            throw new GoogleApiException('Google authorization failed: ' . $message, $error === 'invalid_grant');
+            throw new GoogleApiException('Google authorization failed: ' . $message, $error === 'invalid_grant', null, 'gcal.error_authorization', ['%message%' => $message]);
         }
 
         return $data;

@@ -85,6 +85,7 @@ class CalendarImportServiceTest extends TestCase
             'gcal.meeting_description' => "Participação na reunião '%title%'",
             'gcal.error_missing_target' => 'missing target',
             'gcal.error_end_before_begin' => 'end before begin',
+            'gcal.no_title' => '(no title)',
         ][$id] ?? $id, $parameters));
 
         $timesheetService = $this->createTimesheetService(

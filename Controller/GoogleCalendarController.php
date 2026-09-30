@@ -116,9 +116,12 @@ final class GoogleCalendarController extends AbstractController
         $code = (string) $request->query->get('code');
 
         if ($expectedState === null || !hash_equals($expectedState, $state)) {
-            $this->flashError('gcal.connect_failed', 'invalid state');
+            $this->flashError('gcal.connect_failed', $this->translator->trans('gcal.error_invalid_state', [], 'flashmessages'));
         } elseif ($code === '') {
-            $this->flashError('gcal.connect_failed', (string) $request->query->get('error', 'missing code'));
+            // e.g. "access_denied" when the user cancels the consent screen
+            $this->flashError('gcal.connect_failed', $this->translator->trans('gcal.error_not_authorized', [
+                '%error%' => (string) $request->query->get('error', '-'),
+            ], 'flashmessages'));
         } else {
             $account = $this->accountRepository->getOrCreate($this->getUser());
             try {
@@ -126,7 +129,7 @@ final class GoogleCalendarController extends AbstractController
                 $this->accountRepository->save($account);
                 $this->flashSuccess('gcal.connected');
             } catch (GoogleApiException $ex) {
-                $this->flashError('gcal.connect_failed', $ex->getMessage());
+                $this->flashError('gcal.connect_failed', $this->describe($ex));
             }
         }
 
@@ -173,7 +176,7 @@ final class GoogleCalendarController extends AbstractController
         try {
             $items = $this->importService->loadItems($account, $period['from'], $period['until']);
         } catch (GoogleApiException $ex) {
-            $this->flashError('gcal.connect_failed', $ex->getMessage());
+            $this->flashError('gcal.connect_failed', $this->describe($ex));
 
             return $this->redirectToRoute('google_calendar');
         }
@@ -224,9 +227,9 @@ final class GoogleCalendarController extends AbstractController
 
         $error = null;
         if ($to < $from) {
-            $error = 'end before start';
+            $error = $this->translator->trans('gcal.error_period_reversed', [], 'flashmessages');
         } elseif ($from->diff($to)->days >= self::MAX_PERIOD_DAYS) {
-            $error = \sprintf('max. %d days', self::MAX_PERIOD_DAYS);
+            $error = $this->translator->trans('gcal.error_period_too_long', ['%days%' => (string) self::MAX_PERIOD_DAYS], 'flashmessages');
         }
 
         return [
@@ -249,7 +252,7 @@ final class GoogleCalendarController extends AbstractController
             foreach ($this->client->listCalendars($account) as $calendar) {
                 $label = $calendar['summaryOverride'] ?? $calendar['summary'] ?? $calendar['id'];
                 if ($calendar['primary'] ?? false) {
-                    $choices[$label . ' (primary)'] = 'primary';
+                    $choices[$this->translator->trans('gcal.primary_calendar', ['%name%' => $label])] = 'primary';
                 } else {
                     $choices[$label] = $calendar['id'];
                 }
@@ -257,17 +260,29 @@ final class GoogleCalendarController extends AbstractController
             // listing calendars may have refreshed the access token
             $this->accountRepository->save($account);
         } catch (GoogleApiException $ex) {
-            $this->flashError('gcal.connect_failed', $ex->getMessage());
+            $this->flashError('gcal.connect_failed', $this->describe($ex));
         }
 
         if (!\in_array('primary', $choices, true)) {
-            $choices['primary'] = 'primary';
+            $choices[$this->translator->trans('gcal.primary_calendar_fallback')] = 'primary';
         }
         if (!\in_array($account->getCalendarId(), $choices, true)) {
             $choices[$account->getCalendarId()] = $account->getCalendarId();
         }
 
         return $choices;
+    }
+
+    /**
+     * The user facing, translated reason of a Google failure.
+     */
+    private function describe(GoogleApiException $ex): string
+    {
+        if ($ex->getTranslationKey() === null) {
+            return $ex->getMessage();
+        }
+
+        return $this->translator->trans($ex->getTranslationKey(), $ex->getTranslationParameters(), 'flashmessages');
     }
 
     private function getRedirectUri(): string

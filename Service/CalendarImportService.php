@@ -225,7 +225,7 @@ class CalendarImportService
         return new ImportItem(
             GoogleCalendarLink::TYPE_EVENT,
             $event['id'],
-            trim($event['summary'] ?? '') ?: '(no title)',
+            trim($event['summary'] ?? '') ?: $this->translator->trans('gcal.no_title'),
             $this->toPlainText($event['description'] ?? ''),
             (new \DateTime($event['start']['dateTime']))->setTimezone($timezone),
             (new \DateTime($event['end']['dateTime']))->setTimezone($timezone),
@@ -247,7 +247,7 @@ class CalendarImportService
         return new ImportItem(
             GoogleCalendarLink::TYPE_TASK,
             $task['id'],
-            trim($task['title'] ?? '') ?: '(no title)',
+            trim($task['title'] ?? '') ?: $this->translator->trans('gcal.no_title'),
             trim($task['notes'] ?? ''),
             (clone $end)->modify(\sprintf('-%d minutes', $account->getTaskDuration())),
             $end,

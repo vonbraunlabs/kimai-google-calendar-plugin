@@ -124,6 +124,31 @@ class GoogleApiClientTest extends TestCase
         $this->client([$this->json(['access_token' => 'a'])])->authorize(Fixtures::account(null, false), 'code', 'https://kimai/cb');
     }
 
+    /**
+     * @return iterable<string, array{0: callable(self): void, 1: string}>
+     */
+    public static function translatedFailures(): iterable
+    {
+        yield 'no refresh token' => [fn (self $test) => $test->client([$test->json(['access_token' => 'a'])])->authorize(Fixtures::account(null, false), 'code', 'https://kimai/cb'), 'gcal.error_no_refresh_token'];
+        yield 'not configured' => [fn (self $test) => $test->client([], false)->authorize(Fixtures::account(null, false), 'code', 'https://kimai/cb'), 'gcal.not_configured'];
+        yield 'not connected' => [fn (self $test) => $test->client([])->listCalendars(Fixtures::account(null, false)), 'gcal.error_not_connected'];
+        yield 'transport' => [fn (self $test) => $test->client([fn () => throw new TransportException('timeout')])->listCalendars($test->connectedAccount()), 'gcal.error_unreachable'];
+        yield 'token transport' => [fn (self $test) => $test->client([fn () => throw new TransportException('timeout')])->authorize(Fixtures::account(null, false), 'code', 'https://kimai/cb'), 'gcal.error_unreachable'];
+    }
+
+    /**
+     * @dataProvider translatedFailures
+     */
+    public function testFailuresCarryATranslationKey(callable $call, string $key): void
+    {
+        try {
+            $call($this);
+            self::fail('Expected exception');
+        } catch (GoogleApiException $ex) {
+            self::assertSame($key, $ex->getTranslationKey());
+        }
+    }
+
     public function testTokenRequestNeedsConfiguredClient(): void
     {
         $this->expectException(GoogleApiException::class);
@@ -144,6 +169,8 @@ class GoogleApiClientTest extends TestCase
         } catch (GoogleApiException $ex) {
             self::assertTrue($ex->isAuthorizationLost());
             self::assertStringContainsString('Token has been revoked.', $ex->getMessage());
+            self::assertSame('gcal.error_authorization', $ex->getTranslationKey());
+            self::assertSame(['%message%' => 'Token has been revoked.'], $ex->getTranslationParameters());
         }
     }
 
@@ -222,6 +249,8 @@ class GoogleApiClientTest extends TestCase
         } catch (GoogleApiException $ex) {
             self::assertFalse($ex->isAuthorizationLost());
             self::assertStringContainsString('Not Found', $ex->getMessage());
+            self::assertSame('gcal.error_api', $ex->getTranslationKey());
+            self::assertSame(['%message%' => 'Not Found'], $ex->getTranslationParameters());
         }
     }
 
