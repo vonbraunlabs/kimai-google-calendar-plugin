@@ -1,0 +1,67 @@
+# Local Kimai with the plugin, see README "Development".
+#   docker compose run --rm gcal-test composer test-coverage  ->  unit tests + coverage
+#   docker compose up -d --build   ->  http://localhost:8001  (admin@example.com / see ADMINPASS)
+name: kimai-gcal
+
+services:
+  gcal-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: kimai
+      MYSQL_USER: kimai
+      MYSQL_PASSWORD: kimai
+      MYSQL_ROOT_PASSWORD: kimai-root
+    volumes:
+      - gcal-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pkimai-root"]
+      interval: 5s
+      retries: 60
+      # the first initialization of the data directory took over 5 minutes on a developer machine
+      start_period: 10m
+      start_interval: 5s
+
+  gcal-kimai:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    # the image's WORKDIR is /var/www/html, this makes "exec gcal-kimai bin/console ..." work
+    working_dir: /opt/kimai
+    ports:
+      - "${KIMAI_PORT:-8001}:8001"
+    # the first start runs all Kimai migrations and can take several minutes; without a start
+    # period the image's healthcheck turns unhealthy meanwhile and "up --wait" gives up
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs -o /dev/null http://127.0.0.1:8001 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 20m
+      start_interval: 10s
+    environment:
+      DATABASE_URL: "mysql://kimai:kimai@gcal-db/kimai?charset=utf8mb4&serverVersion=8.0.33"
+      ADMINMAIL: "${KIMAI_ADMIN_USER:-admin@example.com}"
+      ADMINPASS: "${KIMAI_ADMIN_PASSWORD:-change-me-please}"
+      # behind a tunnel/reverse proxy set these, otherwise the OAuth redirect URI is built with http://
+      TRUSTED_PROXIES: "${TRUSTED_PROXIES:-}"
+      TRUSTED_HOSTS: "${TRUSTED_HOSTS:-}"
+      GOOGLE_CALENDAR_CLIENT_ID: "${GOOGLE_CALENDAR_CLIENT_ID:-}"
+      GOOGLE_CALENDAR_CLIENT_SECRET: "${GOOGLE_CALENDAR_CLIENT_SECRET:-}"
+    depends_on:
+      gcal-db:
+        condition: service_healthy
+
+  # unit tests + coverage, no database or Kimai needed (ADR-0005). Only started explicitly:
+  #   docker compose run --rm gcal-test composer test-coverage
+  gcal-test:
+    profiles: [test]
+    build: docker/test
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /app
+    environment:
+      COMPOSER_HOME: /tmp/composer
+    volumes:
+      - .:/app
+
+volumes:
+  gcal-db:

@@ -1,0 +1,29 @@
+{#
+    What a user does to import their own calendar, no Google Cloud knowledge needed.
+    Expanded until the account is connected, collapsed afterwards.
+#}
+{% set step_done = '<i class="fas fa-check-circle text-success ms-1"></i>' %}
+<div class="card mb-3">
+    <details {% if not account.connected %}open{% endif %}>
+        <summary class="card-header" style="cursor: pointer; list-style: none">
+            <h3 class="card-title"><i class="fas fa-list-ol me-2"></i>{{ 'gcal.guide.title'|trans }}</h3>
+            <div class="card-actions"><i class="fas fa-chevron-down text-secondary"></i></div>
+        </summary>
+        <div class="card-body">
+            <ol class="ps-3 mb-0">
+                <li class="mb-3">
+                    <strong>{{ 'gcal.guide.connect'|trans }}</strong>{% if account.connected %}{{ step_done|raw }}{% endif %}<br>
+                    <span class="text-secondary small">{{ 'gcal.guide.connect_text'|trans }}</span>
+                </li>
+                <li class="mb-3">
+                    <strong>{{ 'gcal.guide.settings'|trans }}</strong><br>
+                    <span class="text-secondary small">{{ 'gcal.guide.settings_text'|trans }}</span>
+                </li>
+                <li>
+                    <strong>{{ 'gcal.guide.sync'|trans }}</strong><br>
+                    <span class="text-secondary small">{{ 'gcal.guide.sync_text'|trans }}</span>
+                </li>
+            </ol>
+        </div>
+    </details>
+</div>

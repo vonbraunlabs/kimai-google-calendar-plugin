@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+
+{% block main %}
+    {% if not configured %}
+        <div class="alert alert-warning">
+            <h4 class="alert-title">{{ 'gcal.not_configured_title'|trans }}</h4>
+            <p class="mb-0">{{ (is_granted('system_configuration') ? 'gcal.not_configured_help' : 'gcal.not_configured_user')|trans }}</p>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fab fa-google me-2"></i>{{ 'gcal.connection'|trans }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if account.connected %}
+                        <p class="mb-0">
+                            {{ 'gcal.connected_as'|trans }}
+                            <strong>{{ account.googleEmail ?? '?' }}</strong>
+                        </p>
+                    {% else %}
+                        <p class="mb-0">{{ 'gcal.not_connected_help'|trans }}</p>
+                    {% endif %}
+                </div>
+                {% if account.connected or configured %}
+                <div class="card-footer d-flex gap-2">
+                    {% if account.connected %}
+                        <form method="post" action="{{ path('google_calendar_disconnect') }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('google_calendar_disconnect') }}">
+                            <button type="submit" class="btn btn-outline-danger">{{ 'gcal.disconnect'|trans }}</button>
+                        </form>
+                    {% elseif configured %}
+                        <a href="{{ path('google_calendar_connect') }}" class="btn btn-primary"><i class="fab fa-google me-1"></i>{{ 'gcal.connect'|trans }}</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            {% if account.connected %}
+                <form method="get" action="{{ path('google_calendar_review') }}" class="card mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-file-import me-2"></i>{{ 'gcal.import'|trans }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-secondary">{{ 'gcal.import_help'|trans }}</p>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-sm-4">
+                                <label class="form-label" for="gcal_from">{{ 'gcal.period_from'|trans }}</label>
+                                <input type="date" class="form-control" id="gcal_from" name="from" value="{{ period.from|date('Y-m-d', false) }}" required>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label" for="gcal_to">{{ 'gcal.period_to'|trans }}</label>
+                                <input type="date" class="form-control" id="gcal_to" name="to" value="{{ period.to|date('Y-m-d', false) }}" required>
+                            </div>
+                            <div class="col-sm-4">
+                                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i>{{ 'gcal.load_items'|trans }}</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            {% endif %}
+
+            {% if form %}
+                {% embed 'default/_form.html.twig' with {'title': 'gcal.settings'|trans, 'form': form, 'reset': false} %}{% endembed %}
+            {% endif %}
+
+            {% if links|length > 0 %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ 'gcal.latest_imports'|trans }}</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'gcal.source'|trans }}</th>
+                                    <th>{{ 'description'|trans }}</th>
+                                    <th>{{ 'begin'|trans }}</th>
+                                    <th>{{ 'duration'|trans }}</th>
+                                    <th>{{ 'project'|trans }}</th>
+                                    <th>{{ 'activity'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for link in links %}
+                                    {% set timesheet = link.timesheet %}
+                                    <tr>
+                                        <td>{{ ('gcal.type_' ~ link.sourceType)|trans }}</td>
+                                        <td>{{ link.title }}</td>
+                                        {% if timesheet %}
+                                            <td>{{ timesheet.begin|date_time }}</td>
+                                            <td>{{ timesheet.duration|duration }}</td>
+                                            <td>{{ timesheet.project.name }}</td>
+                                            <td>{{ timesheet.activity.name }}</td>
+                                        {% else %}
+                                            <td colspan="4" class="text-muted">{{ 'gcal.deleted_in_kimai'|trans }}</td>
+                                        {% endif %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        {# before connecting, the guides are what matters most: show them first on small screens #}
+        <div class="col-lg-4 {{ account.connected ? '' : 'order-first order-lg-last' }}">
+            {% if configured %}
+                {{ include('@GoogleCalendar/_user_guide.html.twig') }}
+            {% endif %}
+            {% if is_granted('system_configuration') %}
+                {{ include('@GoogleCalendar/_setup_help.html.twig') }}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

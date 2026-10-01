@@ -1,0 +1,157 @@
+{% extends 'base.html.twig' %}
+
+{% block main %}
+    {% set selectable = items|filter(i => not i.registered) %}
+    <form method="post" action="{{ path('google_calendar_review', period.query) }}" class="card mb-3" id="gcal_review">
+        <input type="hidden" name="_token" value="{{ csrf_token('google_calendar_review') }}">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-file-import me-2"></i>{{ 'gcal.review'|trans }}
+                <span class="text-secondary ms-2">{{ period.from|date_short }} – {{ period.to|date_short }}</span>
+            </h3>
+            <div class="card-actions">
+                <a href="{{ path('google_calendar', period.query) }}" class="btn btn-link">{{ 'gcal.change_period'|trans }}</a>
+            </div>
+        </div>
+
+        {% if items|length == 0 %}
+            <div class="card-body text-secondary">{{ 'gcal.no_items'|trans }}</div>
+        {% else %}
+            <div class="card-body py-2 text-secondary small">{{ 'gcal.review_help'|trans }}</div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th class="w-1"><input type="checkbox" class="form-check-input" id="gcal_select_all" title="{{ 'gcal.select_all'|trans }}"></th>
+                            <th>{{ 'gcal.item'|trans }}</th>
+                            <th>{{ 'begin'|trans }}</th>
+                            <th>{{ 'end'|trans }}</th>
+                            <th>{{ 'project'|trans }}</th>
+                            <th>{{ 'activity'|trans }}</th>
+                            <th>{{ 'description'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            {% set name = 'rows[' ~ item.key ~ ']' %}
+                            {% set icon = item.type == 'task' ? 'fas fa-check-square' : 'far fa-calendar' %}
+                            {% if item.registered %}
+                                <tr class="text-secondary">
+                                    <td><i class="fas fa-check-circle text-success" title="{{ 'gcal.registered_badge'|trans }}"></i></td>
+                                    <td><i class="{{ icon }} me-1"></i>{{ item.title }}</td>
+                                    <td class="text-nowrap">{{ item.timesheet.begin|date_time }}</td>
+                                    <td class="text-nowrap">{{ item.timesheet.end|date_time }}</td>
+                                    <td>{{ item.timesheet.project.name }}</td>
+                                    <td>{{ item.timesheet.activity.name }}</td>
+                                    <td>{{ item.timesheet.description }} <span class="badge bg-success-lt ms-1">{{ 'gcal.registered_badge'|trans }}</span></td>
+                                </tr>
+                            {% else %}
+                                <tr data-gcal-row {% if item.error %}class="bg-danger-lt"{% endif %}>
+                                    <td><input type="checkbox" class="form-check-input gcal-select" name="{{ name }}[selected]" value="1" {% if item.selected %}checked{% endif %}></td>
+                                    <td style="min-width: 12rem">
+                                        <i class="{{ icon }} me-1 text-secondary" title="{{ ('gcal.type_' ~ item.type)|trans }}"></i>{{ item.title }}
+                                        {% if item.error %}<div class="text-danger small mt-1"><i class="fas fa-exclamation-triangle me-1"></i>{{ item.error }}</div>{% endif %}
+                                    </td>
+                                    <td><input type="datetime-local" class="form-control form-control-sm" name="{{ name }}[begin]" value="{{ item.begin|date('Y-m-d\\TH:i', false) }}" required></td>
+                                    <td><input type="datetime-local" class="form-control form-control-sm" name="{{ name }}[end]" value="{{ item.end|date('Y-m-d\\TH:i', false) }}" required></td>
+                                    <td style="min-width: 11rem">
+                                        <select class="form-select form-select-sm gcal-project" name="{{ name }}[project]">
+                                            <option value=""></option>
+                                            {% set lastCustomer = null %}
+                                            {% for project in projects %}
+                                                {% if project.customer.name != lastCustomer %}
+                                                    {% if lastCustomer is not null %}</optgroup>{% endif %}
+                                                    <optgroup label="{{ project.customer.name }}">
+                                                    {% set lastCustomer = project.customer.name %}
+                                                {% endif %}
+                                                <option value="{{ project.id }}" data-globals="{{ project.globalActivities ? 1 : 0 }}" {% if item.project and item.project.id == project.id %}selected{% endif %}>{{ project.name }}{% if project.number %} ({{ project.number }}){% endif %}</option>
+                                            {% endfor %}
+                                            {% if lastCustomer is not null %}</optgroup>{% endif %}
+                                        </select>
+                                        {% if item.projectSource %}<div class="text-secondary small mt-1">{{ ('gcal.source_' ~ item.projectSource)|trans }}</div>{% endif %}
+                                    </td>
+                                    <td style="min-width: 11rem">
+                                        <select class="form-select form-select-sm gcal-activity" name="{{ name }}[activity]">
+                                            <option value=""></option>
+                                            {% for activity in activities %}
+                                                <option value="{{ activity.id }}" data-project="{{ activity.project ? activity.project.id : '' }}" {% if item.activity and item.activity.id == activity.id %}selected{% endif %}>{{ activity.name }}{% if activity.number %} ({{ activity.number }}){% endif %}</option>
+                                            {% endfor %}
+                                        </select>
+                                        {% if item.activitySource %}<div class="text-secondary small mt-1">{{ ('gcal.source_' ~ item.activitySource)|trans }}</div>{% endif %}
+                                    </td>
+                                    <td style="min-width: 16rem"><input type="text" class="form-control form-control-sm" name="{{ name }}[description]" value="{{ item.description }}" maxlength="4000"></td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+        {% if selectable|length > 0 %}
+            <div class="card-footer d-flex align-items-center gap-3">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>{{ 'gcal.register'|trans }}</button>
+                <span class="text-secondary" id="gcal_selected_count"></span>
+            </div>
+        {% endif %}
+    </form>
+
+    <script type="text/javascript">
+        (function () {
+            const form = document.getElementById('gcal_review');
+            const rows = form.querySelectorAll('tr[data-gcal-row]');
+            const counter = document.getElementById('gcal_selected_count');
+            const counterText = {{ 'gcal.selected_count'|trans|json_encode|raw }};
+
+            function updateCounter() {
+                if (counter) {
+                    counter.textContent = counterText.replace('%count%', form.querySelectorAll('.gcal-select:checked').length);
+                }
+            }
+
+            // only activities of the selected project, plus global ones if the project allows them
+            function filterActivities(row) {
+                const project = row.querySelector('.gcal-project');
+                const activity = row.querySelector('.gcal-activity');
+                const option = project.selectedOptions[0];
+                const globals = !project.value || (option && option.dataset.globals === '1');
+                for (const opt of activity.options) {
+                    const visible = opt.value === '' || opt.dataset.project === project.value || (opt.dataset.project === '' && globals);
+                    opt.hidden = !visible;
+                    opt.disabled = !visible;
+                }
+                if (activity.selectedOptions[0] && activity.selectedOptions[0].disabled) {
+                    activity.value = '';
+                }
+            }
+
+            rows.forEach(function (row) {
+                const project = row.querySelector('.gcal-project');
+                const activity = row.querySelector('.gcal-activity');
+                const checkbox = row.querySelector('.gcal-select');
+                filterActivities(row);
+                project.addEventListener('change', function () { filterActivities(row); });
+                // editing a row means the user wants to register it
+                row.querySelectorAll('input:not(.gcal-select), select').forEach(function (field) {
+                    field.addEventListener('change', function () {
+                        if (project.value && activity.value) {
+                            checkbox.checked = true;
+                        }
+                        updateCounter();
+                    });
+                });
+                checkbox.addEventListener('change', updateCounter);
+            });
+
+            const all = document.getElementById('gcal_select_all');
+            if (all) {
+                all.addEventListener('change', function () {
+                    form.querySelectorAll('.gcal-select').forEach(function (cb) { cb.checked = all.checked; });
+                    updateCounter();
+                });
+            }
+
+            updateCounter();
+        })();
+    </script>
+{% endblock %}
