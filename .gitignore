@@ -1,0 +1,8 @@
+/vendor/
+/.phpunit.cache/
+
+# OAuth client credentials downloaded from Google Cloud, never commit
+/google-api-secret.json
+client_secret*.json
+/coverage/
+/.env

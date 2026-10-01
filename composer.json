@@ -1,0 +1,56 @@
+{
+    "name": "vonbraunlabs/kimai-google-calendar-bundle",
+    "description": "Imports Google Calendar events and completed Google Tasks as timesheet records in Kimai",
+    "homepage": "https://github.com/vonbraunlabs/kimai-google-calendar-plugin",
+    "type": "kimai-plugin",
+    "version": "1.0.0",
+    "keywords": [
+        "kimai",
+        "kimai-plugin",
+        "google-calendar",
+        "google-tasks"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Von Braun Labs",
+            "homepage": "https://vonbraunlabs.com.br"
+        }
+    ],
+    "extra": {
+        "kimai": {
+            "require": 20000,
+            "name": "Google Calendar"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "KimaiPlugin\\GoogleCalendarBundle\\": ""
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "KimaiPlugin\\GoogleCalendarBundle\\Tests\\": "Tests/"
+        }
+    },
+    "require-dev": {
+        "kimai/kimai": "^2.56",
+        "phpunit/phpunit": "^10.5"
+    },
+    "minimum-stability": "stable",
+    "config": {
+        "platform": {
+            "php": "8.3"
+        },
+        "sort-packages": true,
+        "allow-plugins": {
+            "symfony/flex": false,
+            "symfony/runtime": false,
+            "php-http/discovery": false
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-coverage": "phpunit --coverage-text --coverage-clover=coverage/clover.xml --coverage-cobertura=coverage/cobertura.xml"
+    }
+}

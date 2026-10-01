@@ -1,0 +1,4 @@
+migrations_paths:
+    KimaiPlugin\GoogleCalendarBundle\Migrations: ./var/plugins/GoogleCalendarBundle/Migrations
+table_storage:
+    table_name: kimai2_bundle_migration_google_calendar

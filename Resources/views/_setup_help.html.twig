@@ -1,0 +1,51 @@
+{#
+    Administrator guide for creating the Google OAuth client, done once per Kimai installation.
+    Expanded until the client is configured, collapsed afterwards.
+#}
+{% set console = 'https://console.cloud.google.com' %}
+{% set step_done = '<i class="fas fa-check-circle text-success ms-1"></i>' %}
+<div class="card mb-3">
+    <details {% if not configured %}open{% endif %}>
+        <summary class="card-header" style="cursor: pointer; list-style: none">
+            <h3 class="card-title"><i class="fas fa-user-shield me-2"></i>{{ 'gcal.help.title'|trans }}</h3>
+            <div class="card-actions"><i class="fas fa-chevron-down text-secondary"></i></div>
+        </summary>
+        <div class="card-body">
+            <p class="text-secondary">{{ 'gcal.help.intro'|trans }}</p>
+            <ol class="ps-3 mb-0">
+                <li class="mb-3">
+                    <strong>{{ 'gcal.help.project'|trans }}</strong><br>
+                    <a href="{{ console }}/projectcreate" target="_blank" rel="noopener">{{ 'gcal.help.project_link'|trans }} <i class="fas fa-external-link-alt small"></i></a>
+                </li>
+                <li class="mb-3">
+                    <strong>{{ 'gcal.help.apis'|trans }}</strong><br>
+                    <a href="{{ console }}/apis/library/calendar-json.googleapis.com" target="_blank" rel="noopener">Google Calendar API <i class="fas fa-external-link-alt small"></i></a><br>
+                    <a href="{{ console }}/apis/library/tasks.googleapis.com" target="_blank" rel="noopener">Google Tasks API <i class="fas fa-external-link-alt small"></i></a>
+                </li>
+                <li class="mb-3">
+                    <strong>{{ 'gcal.help.consent'|trans }}</strong><br>
+                    <span class="text-secondary small">{{ 'gcal.help.consent_text'|trans }}</span><br>
+                    <a href="{{ console }}/apis/credentials/consent" target="_blank" rel="noopener">{{ 'gcal.help.consent_link'|trans }} <i class="fas fa-external-link-alt small"></i></a>
+                </li>
+                <li class="mb-3">
+                    <strong>{{ 'gcal.help.client'|trans }}</strong><br>
+                    <span class="text-secondary small">{{ 'gcal.help.client_text'|trans }}</span>
+                    <div class="input-group input-group-sm my-2">
+                        <input type="text" class="form-control" id="gcal_redirect_uri" value="{{ redirect_uri }}" readonly onclick="this.select()">
+                        <button type="button" class="btn" title="{{ 'gcal.help.copy'|trans }}" onclick="navigator.clipboard.writeText(document.getElementById('gcal_redirect_uri').value); this.querySelector('i').className = 'fas fa-check';"><i class="far fa-copy"></i></button>
+                    </div>
+                    <a href="{{ console }}/apis/credentials/oauthclient" target="_blank" rel="noopener">{{ 'gcal.help.client_link'|trans }} <i class="fas fa-external-link-alt small"></i></a>
+                </li>
+                <li class="mb-3">
+                    <strong>{{ 'gcal.help.kimai'|trans }}</strong>{% if configured %}{{ step_done|raw }}{% endif %}<br>
+                    <span class="text-secondary small">{{ 'gcal.help.kimai_text'|trans }}</span><br>
+                    <a href="{{ path('system_configuration_section', {'section': 'google_calendar'}) }}">{{ 'gcal.help.kimai_link'|trans }} <i class="fas fa-arrow-right small"></i></a>
+                </li>
+                <li>
+                    <strong>{{ 'gcal.help.done'|trans }}</strong><br>
+                    <span class="text-secondary small">{{ 'gcal.help.done_text'|trans }}</span>
+                </li>
+            </ol>
+        </div>
+    </details>
+</div>
